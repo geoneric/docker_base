@@ -61,7 +61,7 @@ def create_swarm(
     nr_workers = arguments["<nr_workers>"]
     assert int(nr_managers) >= 1, nr_managers
     assert int(nr_workers) >= 0, nr_workers
-    results = manage_docker.swarm.create(nr_managers, nr_workers)
+    results = docker_base.swarm.create(nr_managers, nr_workers)
 
     print(results)
 
@@ -84,7 +84,7 @@ def start_nodes(
         argv):
     arguments = docopt.docopt(start_nodes_doc_string, argv=argv)
     nodes = arguments["<nodes>"]
-    results = manage_docker.swarm.start_nodes(nodes)
+    results = docker_base.swarm.start_nodes(nodes)
 
     print(results)
 
@@ -103,7 +103,7 @@ options:
 def status_of_swarm(
         argv):
     arguments = docopt.docopt(status_doc_string, argv=argv)
-    results = manage_docker.swarm.status()
+    results = docker_base.swarm.status()
 
     print(results)
 
@@ -126,7 +126,7 @@ def stop_nodes(
         argv):
     arguments = docopt.docopt(stop_nodes_doc_string, argv=argv)
     nodes = arguments["<nodes>"]
-    results = manage_docker.swarm.stop_nodes(nodes)
+    results = docker_base.swarm.stop_nodes(nodes)
 
     print(results)
 
@@ -152,9 +152,9 @@ def add_nodes(
     nr_nodes = arguments["<nr_nodes>"]
 
     if manager_node:
-        results = manage_docker.swarm.add_manager_nodes(nr_nodes)
+        results = docker_base.swarm.add_manager_nodes(nr_nodes)
     elif worker_node:
-        results = manage_docker.swarm.add_worker_nodes(nr_nodes)
+        results = docker_base.swarm.add_worker_nodes(nr_nodes)
 
     print(results)
 
@@ -177,7 +177,7 @@ def remove_nodes(
         argv):
     arguments = docopt.docopt(remove_nodes_doc_string, argv=argv)
     nodes = arguments["<nodes>"]
-    results = manage_docker.swarm.remove_nodes(nodes)
+    results = docker_base.swarm.remove_nodes(nodes)
 
     print(results)
 
@@ -197,7 +197,7 @@ def create_network(
         argv):
     arguments = docopt.docopt(create_network_doc_string, argv=argv)
     name = arguments["<name>"]
-    results = manage_docker.swarm.create_network(name)
+    results = docker_base.swarm.create_network(name)
 
     print(results)
 
@@ -225,7 +225,7 @@ def manage_network(
     functions = {
         "create": create_network,
     }
-    status = manage_docker.call_subcommand(functions[command], argv)
+    status = docker_base.call_subcommand(functions[command], argv)
 
 
 if __name__ == "__main__":
@@ -241,6 +241,6 @@ if __name__ == "__main__":
         "remove": remove_nodes,
         "network": manage_network
     }
-    status = manage_docker.call_subcommand(functions[command], argv)
+    status = docker_base.call_subcommand(functions[command], argv)
 
     sys.exit(status)
