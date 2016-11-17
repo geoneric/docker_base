@@ -18,7 +18,6 @@ def hostname(
 
 def is_manager(
         node):
-    print("yeah: {} -> {}".format(node, node.startswith(manager_basename())))
     return node.startswith(manager_basename())
 
 
