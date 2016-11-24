@@ -23,8 +23,6 @@ def create(
     network = "--network {}".format(network) if network else ""
     publish = "--publish {}".format(publish) if publish else ""
     replicas = "--replicas {}".format(replicas) if replicas else ""
-    print command
-    print arguments
     command_ = "docker service create --name " \
         "{} {} {} {} {} {} {} {} {} {}".format(
             name, environments, mode, mounts, network,
