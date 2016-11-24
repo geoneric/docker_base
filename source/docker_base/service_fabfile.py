@@ -3,23 +3,33 @@ from . import swarm_fabfile as fabfile
 
 
 def create(
-        nr_instances,
         name,
         image,
         command,
         arguments,
+        environments,
+        mode,
+        mounts,
         network,
-        publish):
+        publish,
+        replicas):
 
     fabfile.assert_swarm_is_running()
 
+    environments = " ".join(["--env {}".format(environment) for environment in
+        environments])
+    mode = "--mode {}".format(mode) if mode else ""
+    mounts = " ".join(["--mount {}".format(mount) for mount in mounts])
     network = "--network {}".format(network) if network else ""
     publish = "--publish {}".format(publish) if publish else ""
-    command = \
-        "docker service create --replicas {} --name {} {} {} {} {} {}".format(
-            nr_instances, name, network, publish, image, command,
-            " ".join(arguments))
-    fabfile.run_on_manager(command)
+    replicas = "--replicas {}".format(replicas) if replicas else ""
+    print command
+    print arguments
+    command_ = "docker service create --name " \
+        "{} {} {} {} {} {} {} {} {} {}".format(
+            name, environments, mode, mounts, network,
+            publish, replicas, image, command, " ".join(arguments))
+    fabfile.run_on_manager(command_)
 
 
 def remove(

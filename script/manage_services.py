@@ -28,8 +28,14 @@ command.
 create_doc_string = """\
 Create a Docker service
 
-usage: {command} create [--network=<network_name>] [--publish=<port_map>]
-    <nr_instances> <name> <image> [<command> [<argument>...]]
+usage: {command} create
+    [--env=<setting>...]
+    [--mode=<setting>]
+    [--mount=<setting>...]
+    [--network=<network_name>]
+    [--publish=<port_map>]
+    [--replicas=<setting>]
+    <name> <image> [-- <command> [<argument>...]]
 
 options:
     -h --help       Show this screen
@@ -40,21 +46,24 @@ options:
 def create_service(
         argv):
     arguments = docopt.docopt(create_doc_string, argv=argv)
-    nr_instances = arguments["<nr_instances>"]
+    replicas = arguments["--replicas"] if "--replicas" in arguments else \
+        None
     network_name = arguments["--network"] if "--network" \
         in arguments else None
     port_map = arguments["--publish"] if "--publish" \
         in arguments else None
+    environments = arguments["--env"]
+    mode = arguments["--mode"] if "--mode" in arguments else None
+    mounts = arguments["--mount"]
     name = arguments["<name>"]
     image = arguments["<image>"]
     command = arguments["<command>"] if arguments["<command>"] is not None \
         else ""
     arguments_ = arguments["<argument>"]
 
-    assert int(nr_instances) >= 1, nr_instances
-
-    results = docker_base.service.create(nr_instances, name, image,
-        command, arguments_, network=network_name, publish=port_map)
+    results = docker_base.service.create(name, image,
+        command, arguments_, network=network_name, environments=environments,
+        mode=mode, mounts=mounts, publish=port_map, replicas=replicas)
 
     print(results)
 

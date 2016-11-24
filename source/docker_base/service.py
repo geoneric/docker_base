@@ -3,17 +3,21 @@ from . import service_fabfile as fabfile
 
 
 def create(
-        nr_instances,
         name,
         image,
         command,
         arguments,
+        environments=[],
+        mode="",
+        mounts=[],
         network="",
-        publish=""):
+        publish="",
+        replicas=""):
 
-    return execute(fabfile.create, nr_instances=nr_instances,
+    return execute(fabfile.create, replicas=replicas,
         name=name, image=image, command=command, arguments=arguments,
-        network=network, publish=publish)
+        environments=environments, mode=mode, mounts=mounts, network=network,
+        publish=publish)
 
 
 def remove(
