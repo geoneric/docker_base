@@ -53,7 +53,7 @@ def create_service(
 
     assert int(nr_instances) >= 1, nr_instances
 
-    results = manage_docker.service.create(nr_instances, name, image,
+    results = docker_base.service.create(nr_instances, name, image,
         command, arguments_, network=network_name, publish=port_map)
 
     print(results)
@@ -74,7 +74,7 @@ def remove_service(
         argv):
     arguments = docopt.docopt(remove_service_doc_string, argv=argv)
     names = arguments["<name>"]
-    results = manage_docker.service.remove(names)
+    results = docker_base.service.remove(names)
 
     print(results)
 
@@ -93,7 +93,7 @@ options:
 def status_of_services(
         argv):
     arguments = docopt.docopt(status_doc_string, argv=argv)
-    results = manage_docker.service.status()
+    results = docker_base.service.status()
 
     print(results)
 
@@ -107,6 +107,6 @@ if __name__ == "__main__":
         "remove": remove_service,
         "status": status_of_services,
     }
-    status = manage_docker.call_subcommand(functions[command], argv)
+    status = docker_base.call_subcommand(functions[command], argv)
 
     sys.exit(status)
