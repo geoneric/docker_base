@@ -16,7 +16,7 @@ def create(
 
     fabfile.assert_swarm_is_running()
 
-    environments = " ".join(["--env {}".format(environment) for environment in
+    environments = " ".join(["--env \"{}\"".format(environment) for environment in
         environments])
     mode = "--mode {}".format(mode) if mode else ""
     mounts = " ".join(["--mount {}".format(mount) for mount in mounts])
