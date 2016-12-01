@@ -42,3 +42,9 @@ def status():
 def create_network(
         name):
     return execute(fabfile.create_network, name=name)
+
+
+def execute_command(
+        command,
+        nodes):
+    return execute(fabfile.execute_command, command=command, nodes=nodes)

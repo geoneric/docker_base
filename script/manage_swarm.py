@@ -22,6 +22,7 @@ Commands:
     add         Add new Swarm nodes
     remove      Remove Swarm nodes that are running or have been stopped
     network     Manage Swarm networks
+    execute     Execture a command on nodes
 
 See '{command} help <command>' for more information on a specific
 command.
@@ -228,6 +229,31 @@ def manage_network(
     status = docker_base.call_subcommand(functions[command], argv)
 
 
+execute_command_doc_string = """\
+Execute command on one or more Docker Swarm nodes
+
+usage: {command} execute <command> [<nodes>...]
+
+options:
+    -h --help       Show this screen
+    <command>       Command to execute
+    <nodes>...      Names of nodes to execute command on
+
+If no nodes are passed, the command is executed on all nodes
+""".format(
+        command = os.path.basename(sys.argv[0]))
+
+
+def execute_command(
+        argv):
+    arguments = docopt.docopt(execute_command_doc_string, argv=argv)
+    command = arguments["<command>"]
+    nodes = arguments["<nodes>"]
+    results = docker_base.swarm.execute_command(command, nodes)
+
+    print(results)
+
+
 if __name__ == "__main__":
     arguments = docopt.docopt(doc_string, version="0.0.0", options_first=True)
     command = arguments["<command>"]
@@ -239,7 +265,8 @@ if __name__ == "__main__":
         "stop": stop_nodes,
         "add": add_nodes,
         "remove": remove_nodes,
-        "network": manage_network
+        "network": manage_network,
+        "execute": execute_command
     }
     status = docker_base.call_subcommand(functions[command], argv)
 

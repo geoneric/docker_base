@@ -379,7 +379,7 @@ def stop_nodes(
 
         if not is_last_running_manager:
             while not node_is_down(node):
-                time.sleep(2)
+                time.sleep(10)
 
             if is_manager(node):
                 command = "docker node demote {}".format(node)
@@ -456,3 +456,18 @@ def create_network(
 
     command = "docker network create --driver overlay {}".format(name)
     run_on_manager(command)
+
+
+def execute_command(
+        command,
+        nodes):
+
+    assert_swarm_exists()
+
+    if not nodes:
+        nodes = swarm_hostnames(state="Running")
+
+    for node in nodes:
+        assert_node_is_ready(node)
+
+        run_on_node(node, command)
