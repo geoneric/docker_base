@@ -12,12 +12,12 @@ def print_error_message(
 
 def call_subcommand(
         function,
-        argv):
+        *arguments):
 
     status = 1
 
     try:
-        function(argv)
+        function(*arguments)
         status = 0
     except SystemExit:
         raise

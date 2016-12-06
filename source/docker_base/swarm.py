@@ -48,3 +48,11 @@ def execute_command(
         command,
         nodes):
     return execute(fabfile.execute_command, command=command, nodes=nodes)
+
+
+def execute_on_nodes(
+        nodes,
+        command,
+        arguments):
+    return execute(fabfile.execute_on_nodes, nodes=nodes, command=command,
+        arguments=arguments)

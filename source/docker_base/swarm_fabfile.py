@@ -471,3 +471,20 @@ def execute_command(
         assert_node_is_ready(node)
 
         run_on_node(node, command)
+
+
+def execute_on_nodes(
+        nodes,
+        command,
+        arguments):
+
+    assert_swarm_exists()
+
+    if not nodes:
+        nodes = swarm_hostnames(state="Running")
+
+    for node in nodes:
+        assert_node_is_ready(node)
+
+        command = "{} {}".format(command, " ".join(arguments))
+        run_on_node(node, command)
