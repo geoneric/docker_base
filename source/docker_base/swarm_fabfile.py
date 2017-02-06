@@ -86,6 +86,12 @@ def swarm_hostnames(
     return hosts
 
 
+def assert_node_is_stopped(
+        node):
+    if not node in swarm_hostnames(state="Stopped"):
+        raise RuntimeError("Node {} must be stopped first...")
+
+
 def manager_hostname(
         idx):
     return hostname(manager_basename(), idx)
@@ -168,6 +174,9 @@ def run_on_node(
 
 def run_on_manager(
         command):
+    """
+    This function assumes a manager node is running
+    """
 
     # Just pick one of the managers.
     # TODO Detect which one is running and active.
@@ -178,8 +187,12 @@ def run_on_manager(
 
 def status_of_node(
         node):
+    """
+    This function assumes a manager node is running
+    """
 
-    command = "docker node inspect --format='{{{{.Status.State}}}}' {}".format(node)
+    command = "docker node inspect --format='{{{{.Status.State}}}}' {}" \
+        .format(node)
     status = run_on_manager(command).strip()
     assert status in ["ready", "down"]
     return status
@@ -188,6 +201,9 @@ def status_of_node(
 def assert_node_has_status(
         node,
         status):
+    """
+    This function assumes a manager node is running
+    """
 
     if status_of_node(node) != status:
         raise RuntimeError("Node {} is not {}...".format(node, status))
@@ -195,18 +211,28 @@ def assert_node_has_status(
 
 def assert_node_is_ready(
         node):
+    """
+    This function assumes a manager node is running
+    """
 
     assert_node_has_status(node, "ready")
 
 
 def assert_node_is_down(
         node):
+    """
+    This function assumes a manager node is running
+    """
 
     assert_node_has_status(node, "down")
 
 
 def node_is_down(
         node):
+    """
+    This function assumes a manager node is running
+    """
+
     return status_of_node(node) == "down"
 
 
@@ -296,7 +322,7 @@ def add_manager_nodes(
 
     nr_nodes = int(nr_nodes)
 
-    for m in xrange(nr_nodes):
+    for m in range(nr_nodes):
         manager_hostname = new_manager_hostname()
         create_host(manager_hostname)
         add_manager_to_swarm(manager_hostname)
@@ -309,7 +335,7 @@ def add_worker_nodes(
 
     nr_nodes = int(nr_nodes)
 
-    for n in xrange(nr_nodes):
+    for n in range(nr_nodes):
         worker_hostname = new_worker_hostname()
         create_host(worker_hostname)
         add_worker_to_swarm(worker_hostname)
@@ -433,7 +459,7 @@ def remove_nodes(
         nodes = swarm_hostnames(state="Stopped")
 
     for node in nodes:
-        assert_node_is_down(node)
+        assert_node_is_stopped(node)
 
         local("docker-machine rm -f {}".format(node))
 
