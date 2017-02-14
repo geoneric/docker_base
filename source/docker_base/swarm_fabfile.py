@@ -296,7 +296,7 @@ def add_manager_nodes(
 
     nr_nodes = int(nr_nodes)
 
-    for m in xrange(nr_nodes):
+    for m in range(nr_nodes):
         manager_hostname = new_manager_hostname()
         create_host(manager_hostname)
         add_manager_to_swarm(manager_hostname)
@@ -309,7 +309,7 @@ def add_worker_nodes(
 
     nr_nodes = int(nr_nodes)
 
-    for n in xrange(nr_nodes):
+    for n in range(nr_nodes):
         worker_hostname = new_worker_hostname()
         create_host(worker_hostname)
         add_worker_to_swarm(worker_hostname)
