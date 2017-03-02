@@ -10,7 +10,7 @@ Execute command on Docker Swarm nodes
 
 usage:
     {command} <nodes> <command> [<arguments>...]
-    {command} [--help]
+    {command} (-h | --help)
 
 options:
     -h --help   Show this screen
@@ -30,8 +30,7 @@ def execute_on_nodes(
 
 
 if __name__ == "__main__":
-    arguments = docopt.docopt(doc_string, version="0.0.0",
-        options_first=True)
+    arguments = docopt.docopt(doc_string, version="0.0.0", options_first=True)
     nodes = arguments["<nodes>"].split(",")
     command = arguments["<command>"]
     arguments_ = arguments["<arguments>"]
