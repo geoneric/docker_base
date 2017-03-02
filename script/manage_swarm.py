@@ -8,7 +8,9 @@ import docker_base.swarm
 doc_string = """\
 Manage a Docker Swarm
 
-usage: {command} [--help] <command> [<arguments>...]
+usage:
+    {command} <driver> <host_prefix> <command> [<arguments>...]
+    {command} (-h | --help)
 
 options:
     -h --help   Show this screen
@@ -37,7 +39,9 @@ client to it (replace manager by the hostname of a Swarm manager):
 create_doc_string = """\
 Create a Docker Swarm
 
-usage: {command} create <nr_managers> <nr_workers>
+usage:
+    create <nr_managers> <nr_workers>
+    create (-h | --help)
 
 options:
     -h --help       Show this screen
@@ -51,18 +55,21 @@ address, but Docker Machine could not reach it successfully), this
 command may help:
 
 $ sudo ifconfig vboxnet0 down && sudo ifconfig vboxnet0 up
-""".format(
-        command = os.path.basename(sys.argv[0]))
+"""
 
 
 def create_swarm(
-        argv):
-    arguments = docopt.docopt(create_doc_string, argv=argv)
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(create_doc_string, argv=command_arguments)
     nr_managers = arguments["<nr_managers>"]
     nr_workers = arguments["<nr_workers>"]
     assert int(nr_managers) >= 1, nr_managers
     assert int(nr_workers) >= 0, nr_workers
-    results = docker_base.swarm.create(nr_managers, nr_workers)
+    results = docker_base.swarm.create(
+        global_arguments["<driver>"],
+        global_arguments["<host_prefix>"],
+        nr_managers, nr_workers)
 
     print(results)
 
@@ -70,41 +77,50 @@ def create_swarm(
 start_nodes_doc_string = """\
 Start one or more Docker Swarm nodes
 
-usage: {command} start [<nodes>...]
+usage:
+    start [<nodes>...]
+    start (-h | --help)
 
 options:
     -h --help       Show this screen
     <nodes>...      Names of nodes to start
 
 If no nodes are passed, the whole Swarm is started
-""".format(
-        command = os.path.basename(sys.argv[0]))
+"""
 
 
 def start_nodes(
-        argv):
-    arguments = docopt.docopt(start_nodes_doc_string, argv=argv)
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(start_nodes_doc_string, argv=command_arguments)
     nodes = arguments["<nodes>"]
-    results = docker_base.swarm.start_nodes(nodes)
+    results = docker_base.swarm.start_nodes(
+        global_arguments["<driver>"],
+        global_arguments["<host_prefix>"],
+        nodes)
 
     print(results)
 
 
 status_doc_string = """\
-Status of a Docker Swarm
+Show status of a Docker Swarm
 
-usage: {command} status
+usage:
+    status
+    status (-h | --help)
 
 options:
     -h --help       Show this screen
-""".format(
-        command = os.path.basename(sys.argv[0]))
+"""
 
 
 def status_of_swarm(
-        argv):
-    arguments = docopt.docopt(status_doc_string, argv=argv)
-    results = docker_base.swarm.status()
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(status_doc_string, argv=command_arguments)
+    results = docker_base.swarm.status(
+        global_arguments["<driver>"],
+        global_arguments["<host_prefix>"])
 
     print(results)
 
@@ -112,22 +128,27 @@ def status_of_swarm(
 stop_nodes_doc_string = """\
 Stop one or more Docker Swarm nodes
 
-usage: {command} stop [<nodes>...]
+usage:
+    stop [<nodes>...]
+    stop (-h | --help)
 
 options:
     -h --help       Show this screen
     <nodes>...      Names of nodes to stop
 
 If no nodes are passed, the whole Swarm is stopped
-""".format(
-        command = os.path.basename(sys.argv[0]))
+"""
 
 
 def stop_nodes(
-        argv):
-    arguments = docopt.docopt(stop_nodes_doc_string, argv=argv)
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(stop_nodes_doc_string, argv=command_arguments)
     nodes = arguments["<nodes>"]
-    results = docker_base.swarm.stop_nodes(nodes)
+    results = docker_base.swarm.stop_nodes(
+        global_arguments["<driver>"],
+        global_arguments["<host_prefix>"],
+        nodes)
 
     print(results)
 
@@ -135,27 +156,35 @@ def stop_nodes(
 add_nodes_doc_string = """\
 Add one or more Docker Swarm nodes
 
-usage: {command} add (--manager | --worker) <nr_nodes>
+usage:
+    add (--manager | --worker) <nr_nodes>
+    add (-h | --help)
 
 options:
     -h --help       Show this screen
     --manager       Add manager nodes
     --worker        Add worker nodes
-""".format(
-        command = os.path.basename(sys.argv[0]))
+"""
 
 
 def add_nodes(
-        argv):
-    arguments = docopt.docopt(add_nodes_doc_string, argv=argv)
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(add_nodes_doc_string, argv=command_arguments)
     manager_node = arguments["--manager"]
     worker_node = arguments["--worker"]
     nr_nodes = arguments["<nr_nodes>"]
 
     if manager_node:
-        results = docker_base.swarm.add_manager_nodes(nr_nodes)
+        results = docker_base.swarm.add_manager_nodes(
+            global_arguments["<driver>"],
+            global_arguments["<host_prefix>"],
+            nr_nodes)
     elif worker_node:
-        results = docker_base.swarm.add_worker_nodes(nr_nodes)
+        results = docker_base.swarm.add_worker_nodes(
+            global_arguments["<driver>"],
+            global_arguments["<host_prefix>"],
+            nr_nodes)
 
     print(results)
 
@@ -163,22 +192,28 @@ def add_nodes(
 remove_nodes_doc_string = """\
 Remove one or more Docker Swarm nodes
 
-usage: {command} remove [<nodes>...]
+usage:
+    remove [<nodes>...]
+    remove (-h | --help)
 
 options:
     -h --help       Show this screen
     <nodes>...      Names of nodes to remove
 
 If no nodes are passed, the whole Swarm is removed
-""".format(
-        command = os.path.basename(sys.argv[0]))
+"""
 
 
 def remove_nodes(
-        argv):
-    arguments = docopt.docopt(remove_nodes_doc_string, argv=argv)
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(remove_nodes_doc_string,
+        argv=command_arguments)
     nodes = arguments["<nodes>"]
-    results = docker_base.swarm.remove_nodes(nodes)
+    results = docker_base.swarm.remove_nodes(
+        global_arguments["<driver>"],
+        global_arguments["<host_prefix>"],
+        nodes)
 
     print(results)
 
@@ -186,19 +221,25 @@ def remove_nodes(
 create_network_doc_string = """\
 Create a new overlay network in the Swarm
 
-usage: {command} network create <name>
+usage:
+    create <name>
+    create (-h | --help)
 
 options:
     -h --help       Show this screen
-""".format(
-        command = os.path.basename(sys.argv[0]))
+"""
 
 
 def create_network(
-        argv):
-    arguments = docopt.docopt(create_network_doc_string, argv=argv)
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(create_network_doc_string,
+        argv=command_arguments)
     name = arguments["<name>"]
-    results = docker_base.swarm.create_network(name)
+    results = docker_base.swarm.create_network(
+        global_arguments["<driver>"],
+        global_arguments["<host_prefix>"],
+        name)
 
     print(results)
 
@@ -206,33 +247,42 @@ def create_network(
 manage_network_doc_string = """\
 Manage network configuration one the Docker Swarm
 
-usage: {command} network <command> [<arguments>...]
+usage:
+    network <command> [<arguments>...]
+    network (-h | --help)
 
 options:
     -h --help       Show this screen
 
 Commands:
     create      Create new overlay network
-""".format(
-        command = os.path.basename(sys.argv[0]))
+"""
 
 
 def manage_network(
-        argv):
-    arguments = docopt.docopt(manage_network_doc_string, argv=argv,
-        options_first=True)
-    command = arguments["<command>"]
-    argv = [argv[0]] + [command] + arguments["<arguments>"]
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(manage_network_doc_string,
+        argv=command_arguments, options_first=True)
+    command = arguments.pop("<command>")
+    command_arguments = arguments.pop("<arguments>")
+    if command_arguments is None:
+        command_arguments = {}
+    assert not arguments  # Otherwise merge with global_arguments.
+
     functions = {
         "create": create_network,
     }
-    status = docker_base.call_subcommand(functions[command], argv)
+    status = docker_base.call_subcommand(functions[command],
+        command_arguments, global_arguments)
 
 
 execute_command_doc_string = """\
 Execute command on one or more Docker Swarm nodes
 
-usage: {command} execute <command> [<nodes>...]
+usage:
+    execute <command> [<nodes>...]
+    execute (-h | --help)
 
 options:
     -h --help       Show this screen
@@ -240,24 +290,31 @@ options:
     <nodes>...      Names of nodes to execute command on
 
 If no nodes are passed, the command is executed on all nodes
-""".format(
-        command = os.path.basename(sys.argv[0]))
+"""
 
 
 def execute_command(
-        argv):
-    arguments = docopt.docopt(execute_command_doc_string, argv=argv)
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(execute_command_doc_string,
+        argv=command_arguments)
     command = arguments["<command>"]
     nodes = arguments["<nodes>"]
-    results = docker_base.swarm.execute_command(command, nodes)
+    results = docker_base.swarm.execute_command(
+        global_arguments["<driver>"],
+        global_arguments["<host_prefix>"],
+        command, nodes)
 
     print(results)
 
 
 if __name__ == "__main__":
     arguments = docopt.docopt(doc_string, version="0.0.0", options_first=True)
-    command = arguments["<command>"]
-    argv = [command] + arguments["<arguments>"]
+    command = arguments.pop("<command>")
+    command_arguments = arguments.pop("<arguments>")
+    if command_arguments is None:
+        command_arguments = {}
+    global_arguments = arguments
     functions = {
         "create": create_swarm,
         "start": start_nodes,
@@ -268,6 +325,7 @@ if __name__ == "__main__":
         "network": manage_network,
         "execute": execute_command
     }
-    status = docker_base.call_subcommand(functions[command], argv)
+    status = docker_base.call_subcommand(functions[command],
+        command_arguments, global_arguments)
 
     sys.exit(status)
