@@ -9,7 +9,7 @@ doc_string = """\
 Execute command on Docker Swarm nodes
 
 usage:
-    {command} <nodes> <command> [<arguments>...]
+    {command} <driver> <host_prefix> <nodes> <command> [<arguments>...]
     {command} (-h | --help)
 
 options:
@@ -20,11 +20,14 @@ options:
 
 
 def execute_on_nodes(
+        driver,
+        host_prefix,
         nodes,
         command,
         arguments):
 
-    results = docker_base.swarm.execute_on_nodes(nodes, command, arguments)
+    results = docker_base.swarm.execute_on_nodes(driver, host_prefix,
+        nodes, command, arguments)
 
     print(results)
 
@@ -35,7 +38,9 @@ if __name__ == "__main__":
     command = arguments["<command>"]
     arguments_ = arguments["<arguments>"]
 
-    status = docker_base.call_subcommand(execute_on_nodes, nodes, command,
-        arguments_)
+    status = docker_base.call_subcommand(execute_on_nodes,
+        arguments["<driver>"],
+        arguments["<host_prefix>"],
+        nodes, command, arguments_)
 
     sys.exit(status)

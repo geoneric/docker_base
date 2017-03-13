@@ -124,7 +124,7 @@ class Swarm(object):
         command = "sudo docker node inspect " \
             "--format='{{{{.Status.State}}}}' {}".format(node)
         status = self.run_on_manager(command).strip()
-        assert status in ["ready", "down"]
+        assert status in ["ready", "down"], status
         return status
 
 
@@ -156,6 +156,12 @@ class Swarm(object):
             "--swarm",
             "--swarm-image \"swarm:1.2.6\"",
         ]
+
+        if self.driver != "virtualbox":
+            # Assume rsyslog is installed.
+            options.append(
+                "--engine-opt log-driver=syslog",
+            )
 
         local("docker-machine create {} {}".format(" ".join(options),
             hostname))
@@ -193,7 +199,7 @@ class Swarm(object):
         #     assert False, self.driver
 
         command = "docker-machine ssh {} {}".format(node, command)
-        result = local(command)
+        result = local(command, capture=True)
 
         return result
 
@@ -627,6 +633,5 @@ def execute_on_nodes(
         nodes,
         command,
         arguments):
-
     swarm = Swarm(driver, host_prefix)
     swarm.execute_on_nodes(nodes, command, arguments)

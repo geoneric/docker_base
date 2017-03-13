@@ -85,8 +85,11 @@ def execute_command(
 
 
 def execute_on_nodes(
+        driver,
+        host_prefix,
         nodes,
         command,
         arguments):
-    return execute(fabfile.execute_on_nodes, nodes=nodes, command=command,
-        arguments=arguments)
+    return execute(fabfile.execute_on_nodes,
+        driver=driver, host_prefix=host_prefix,
+        nodes=nodes, command=command, arguments=arguments)
