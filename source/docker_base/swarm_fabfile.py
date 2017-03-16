@@ -1,4 +1,6 @@
+import json
 import os
+import sys
 import time
 from fabric.api import *
 
@@ -11,6 +13,12 @@ class Swarm(object):
             host_prefix):
         self.driver = driver
         self.host_prefix = host_prefix
+
+
+    def print_status(self,
+            message):
+        sys.stdout.write("{}\n".format(message))
+        sys.stdout.flush()
 
 
     def host_basename(self,
@@ -44,6 +52,26 @@ class Swarm(object):
         return node.startswith(self.worker_basename())
 
 
+    def local(self,
+            command):
+        # self.print_status(command)
+        with quiet():
+            result = local(command, capture=True)
+
+        if not result.succeeded:
+            messages = [
+                "failed to execute command:",
+                command,
+                "stdout:",
+                result.stdout,
+                "stderr:",
+                result.stderr,
+            ]
+            raise RuntimeError("\n".join(messages))
+
+        return result
+
+
     def swarm_hostnames(self,
             state=None):
 
@@ -53,9 +81,8 @@ class Swarm(object):
         filters = " ".join(["--filter \"{}\"".format(filter) for filter in
             filters])
 
-        hosts = str(local("docker-machine ls --quiet {}".format(filters),
-            capture=True)).strip()
-
+        hosts = str(self.local("docker-machine ls --quiet {}".format(
+            filters))).strip()
         hosts = hosts.split("\n") if hosts else []
 
         # Sort hostnames. Put worker nodes in front of manager nodes. When
@@ -148,8 +175,42 @@ class Swarm(object):
             raise RuntimeError("Swarm is not running...")
 
 
+    def update_os(self,
+            hostname):
+        self.run_on_node(hostname, command="sudo apt-get update")
+        self.run_on_node(hostname, command="sudo apt-get -y upgrade")
+
+
+        # TODO Reboot node
+
+        # reboot(hostname, wait=30)
+
+        # if self.driver == "virtualbox":
+        #     with settings(
+        #             host_string=self.ip_address(node),
+        #             user="docker",
+        #             password="tcuser",
+        #             shell="/bin/sh -c"):
+        #         result = run(command)
+        # elif self.driver == "amazonec2":
+        #     with settings(
+        #             host_string=self.ip_address(node),
+        #             # TODO Actually, this depends on the AMI, not the driver.
+        #             user="ubuntu",
+        #             key_filename=[
+        #                 os.path.join(os.environ["HOME"],
+        #                     ".docker/machine/machines/{}/id_rsa".format(node))
+        #             ],
+        #             shell="/bin/sh -c"):
+        #         result = run(command)
+        # else:
+        #     assert False, self.driver
+
+
     def create_host(self,
             hostname):
+
+        self.print_status("create {} host {}".format(self.driver, hostname))
 
         options = [
             "--driver {}".format(self.driver),
@@ -163,14 +224,27 @@ class Swarm(object):
                 "--engine-opt log-driver=syslog",
             )
 
-        local("docker-machine create {} {}".format(" ".join(options),
+        result = self.local("docker-machine create {} {}".format(" ".join(options),
             hostname))
+        self.print_status("{}".format(result))
+
+        # self.update_os(hostname)
 
 
-    def ip_address(self,
+    def lan_ip_address(self,
             hostname):
-        return str(local("docker-machine ip {}".format(hostname),
-            capture=True))
+
+        if self.driver == "virtualbox":
+            command = "docker-machine ip {}".format(hostname)
+            result = str(self.local(command))
+        else:
+            command = "ifconfig eth0 | " \
+                "grep 'inet ' | cut -d ':' -f 2 | cut -d ' ' -f 1".format(hostname)
+            result = str(self.run_on_node(hostname, command))
+
+        assert result, command
+
+        return result
 
 
     def run_on_node(self,
@@ -199,7 +273,8 @@ class Swarm(object):
         #     assert False, self.driver
 
         command = "docker-machine ssh {} {}".format(node, command)
-        result = local(command, capture=True)
+
+        result = self.local(command)
 
         return result
 
@@ -217,13 +292,94 @@ class Swarm(object):
         return self.run_on_node(manager_hostname, command)
 
 
+    def configure_aws_security_group(self):
+        # The default security group on AWS is named 'docker-machine'.
+        # To configure it, we need the group-id.
+
+        command = "aws ec2 describe-security-groups --query " \
+            "\"SecurityGroups[?GroupName=='docker-machine'].{id:GroupId}\""
+        result = self.local(command)
+        # [
+        #     {
+        #         "id": "sg-9bd92af0"
+        #     }
+        # ]
+        group_id = json.loads(result)[0]["id"]
+
+        command = "aws ec2 describe-security-groups --query " \
+            "\"SecurityGroups[?GroupName=='docker-machine'].[IpPermissions]\""
+        result = self.local(command)
+        # [
+        #     [
+        #         [
+        #             {
+        #                 "IpRanges": [],
+        #                 "FromPort": 2377,
+        #                 "ToPort": 2377,
+        #                 "IpProtocol": "tcp",
+        #                 "PrefixListIds": [],
+        #                 "UserIdGroupPairs": [
+        #                     {
+        #                         "UserId": "924595054575",
+        #                         "GroupId": "sg-9bd92af0"
+        #                     }
+        #                 ],
+        #                 "Ipv6Ranges": []
+        #             },
+        # ...
+        permissions = json.loads(result)[0][0]
+
+        def protocol_port_already_configured(
+                protocol,
+                port):
+            for permission in permissions:
+                if permission["IpProtocol"] == protocol and \
+                        permission["FromPort"] == port and \
+                        permission["ToPort"] == port and \
+                        permission["UserIdGroupPairs"]:
+                    return True
+
+            return False
+
+
+        protocol_port_tuples = [
+            # Cluster management (not needed on workers).
+            ("tcp", 2377),
+            # Communication among nodes.
+            ("tcp", 7946),
+            ("udp", 7946),
+            # Overlay network traffic.
+            # ("tcp", 4789),
+            ("udp", 4789),
+        ]
+
+
+        for protocol_port_tuple in protocol_port_tuples:
+            if not protocol_port_already_configured(*protocol_port_tuple):
+                # Allow inbound traffic from other nodes in the same
+                # security-group.
+                command = "aws ec2 authorize-security-group-ingress " \
+                    "--group-id {security_group} " \
+                    "--protocol {protocol} " \
+                    "--port {port} " \
+                    "--source-group {security_group}".format(
+                        security_group=group_id,
+                        protocol=protocol_port_tuple[0],
+                        port=protocol_port_tuple[1])
+                self.local(command)
+
+
     def init_swarm(self,
             manager_hostname):
 
-        manager_ip_address = self.ip_address(manager_hostname)
+        manager_ip_address = self.lan_ip_address(manager_hostname)
         command = "sudo docker swarm init --advertise-addr {}:2377".format(
             manager_ip_address)
-        self.run_on_node(manager_hostname, command)
+        result = self.run_on_node(manager_hostname, command)
+        self.print_status(result)
+
+        if self.driver == "amazonec2":
+            self.configure_aws_security_group()
 
 
     def join_info(self,
@@ -231,7 +387,8 @@ class Swarm(object):
 
         command = "sudo docker swarm join-token --quiet {}".format(node_type)
         token = self.run_on_manager(command).strip()
-        manager_ip_address = self.ip_address(self.manager_hostnames(
+        assert token
+        manager_ip_address = self.lan_ip_address(self.manager_hostnames(
             state="Running")[-1])
 
         return token, manager_ip_address
@@ -250,6 +407,7 @@ class Swarm(object):
             join_token,
             manager_ip_address):
 
+        self.print_status("add node {} to swarm".format(hostname))
         command = "sudo docker swarm join --token {} {}:2377".format(
             join_token, manager_ip_address)
         self.run_on_node(hostname, command)
@@ -387,18 +545,52 @@ class Swarm(object):
         self.add_worker_nodes(nr_workers)
 
 
-        print("Use this command to connect to the Swarm:\n\n{}\n".format(
-            "    eval $(docker-machine env {})".format(manager_hostname_)))
+        # sys.stdout.write("Use this command to connect to the Swarm:\n\n{}\n".format(
+        #     "    eval $(docker-machine env {})".format(manager_hostname_)))
 
 
     def status(self):
         self.assert_swarm_is_running()
 
         command = "sudo docker node ls"
-        self.run_on_manager(command)
+        result = self.run_on_manager(command)
+        sys.stdout.write("--- nodes ---\n{}\n\n".format(result))
 
         command = "sudo docker network ls"
-        self.run_on_manager(command)
+        result = self.run_on_manager(command)
+        sys.stdout.write("--- networkѕ ---\n{}\n\n".format(result))
+
+
+    def service_names(self):
+        command = "sudo docker service ls"
+
+        # Example output:
+        #
+        # ID            NAME     REPLICAS  IMAGE   COMMAND
+        # cmxx7hguy4j6  pinger   2/2       alpine  ping docker.com
+        # dhh7v9efigqo  pinger2  2/2       alpine  ping docker.com
+
+        lines = str(self.run_on_manager(command)).split("\n")[1:]
+        lines = [line.strip() for line in lines]
+        names = [line.split()[1] for line in lines]
+        return names
+
+
+    def status_of_services(self,
+            service_names):
+        self.assert_swarm_is_running()
+
+        if not service_names:
+            command = "sudo docker service ls"
+            result = self.run_on_manager(command)
+            sys.stdout.write("--- services ---\n{}\n\n".format(result))
+
+            service_names = self.service_names()
+
+        for service_name in service_names:
+            command = "sudo docker service ps {}".format(service_name)
+            result = self.run_on_manager(command)
+            sys.stdout.write("--- {} ---\n{}\n\n".format(service_name, result))
 
 
     def stop(self,
@@ -416,7 +608,7 @@ class Swarm(object):
             is_last_running_manager = self.is_manager(node) and \
                 len(self.swarm_hostnames(state="Running")) == 1
             self.leave_swarm(node)
-            local("docker-machine stop {}".format(node))
+            self.local("docker-machine stop {}".format(node))
 
             if not is_last_running_manager:
                 while not self.node_is_down(node):
@@ -442,7 +634,7 @@ class Swarm(object):
 
         for node in nodes:
             self.assert_node_is_down(node)
-            local("docker-machine start {}".format(node))
+            self.local("docker-machine start {}".format(node))
             self.join_swarm(node)
 
 
@@ -459,7 +651,7 @@ class Swarm(object):
         for node in nodes:
             self.assert_node_is_stopped(node)
 
-            local("docker-machine rm -f {}".format(node))
+            self.local("docker-machine rm -f {}".format(node))
 
 
     def create_network(self,
@@ -635,3 +827,22 @@ def execute_on_nodes(
         arguments):
     swarm = Swarm(driver, host_prefix)
     swarm.execute_on_nodes(nodes, command, arguments)
+
+
+def status_of_services(
+        driver,
+        host_prefix,
+        services):
+
+    swarm = Swarm(driver, host_prefix)
+    swarm.status_of_services(services)
+
+
+# def remove(
+#         names):
+# 
+#     fabfile.assert_swarm_is_running()
+# 
+#     for name in names:
+#         command = "docker service rm {}".format(name)
+#         fabfile.run_on_manager(command)

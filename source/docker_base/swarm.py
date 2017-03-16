@@ -58,7 +58,7 @@ def add_worker_nodes(
         nr_nodes=nr_nodes)
 
 
-def status(
+def status_of_swarm(
         driver,
         host_prefix):
     return execute(fabfile.status_of_swarm,
@@ -93,3 +93,21 @@ def execute_on_nodes(
     return execute(fabfile.execute_on_nodes,
         driver=driver, host_prefix=host_prefix,
         nodes=nodes, command=command, arguments=arguments)
+
+
+def status_of_services(
+        driver,
+        host_prefix,
+        services):
+    return execute(fabfile.status_of_services,
+        driver=driver, host_prefix=host_prefix,
+        services=services)
+
+
+def remove_services(
+        driver,
+        host_prefix,
+        names):
+    return execute(fabfile.remove_services,
+        driver=driver, host_prefix=host_prefix,
+        names=names)

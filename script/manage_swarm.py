@@ -118,7 +118,7 @@ def status_of_swarm(
         command_arguments,
         global_arguments):
     arguments = docopt.docopt(status_doc_string, argv=command_arguments)
-    results = docker_base.swarm.status(
+    results = docker_base.swarm.status_of_swarm(
         global_arguments["<driver>"],
         global_arguments["<host_prefix>"])
 
@@ -268,7 +268,9 @@ def manage_network(
     command_arguments = arguments.pop("<arguments>")
     if command_arguments is None:
         command_arguments = {}
-    assert not arguments  # Otherwise merge with global_arguments.
+
+    # Otherwise merge with global_arguments.
+    assert "--help" in arguments and len(arguments) == 1, arguments
 
     functions = {
         "create": create_network,
