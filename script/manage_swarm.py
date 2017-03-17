@@ -71,8 +71,6 @@ def create_swarm(
         global_arguments["<host_prefix>"],
         nr_managers, nr_workers)
 
-    print(results)
-
 
 start_nodes_doc_string = """\
 Start one or more Docker Swarm nodes
@@ -99,8 +97,6 @@ def start_nodes(
         global_arguments["<host_prefix>"],
         nodes)
 
-    print(results)
-
 
 status_doc_string = """\
 Show status of a Docker Swarm
@@ -121,8 +117,6 @@ def status_of_swarm(
     results = docker_base.swarm.status_of_swarm(
         global_arguments["<driver>"],
         global_arguments["<host_prefix>"])
-
-    print(results)
 
 
 stop_nodes_doc_string = """\
@@ -149,8 +143,6 @@ def stop_nodes(
         global_arguments["<driver>"],
         global_arguments["<host_prefix>"],
         nodes)
-
-    print(results)
 
 
 add_nodes_doc_string = """\
@@ -186,8 +178,6 @@ def add_nodes(
             global_arguments["<host_prefix>"],
             nr_nodes)
 
-    print(results)
-
 
 remove_nodes_doc_string = """\
 Remove one or more Docker Swarm nodes
@@ -215,8 +205,6 @@ def remove_nodes(
         global_arguments["<host_prefix>"],
         nodes)
 
-    print(results)
-
 
 create_network_doc_string = """\
 Create a new overlay network in the Swarm
@@ -240,8 +228,6 @@ def create_network(
         global_arguments["<driver>"],
         global_arguments["<host_prefix>"],
         name)
-
-    print(results)
 
 
 manage_network_doc_string = """\
@@ -306,8 +292,6 @@ def execute_command(
         global_arguments["<driver>"],
         global_arguments["<host_prefix>"],
         command, nodes)
-
-    print(results)
 
 
 if __name__ == "__main__":

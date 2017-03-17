@@ -43,8 +43,6 @@ def remove_services(
     names = arguments["<name>"]
     results = docker_base.swarm.remove_services(names)
 
-    print(results)
-
 
 status_doc_string = """\
 Show status of Docker services
@@ -70,8 +68,6 @@ def status_of_services(
         global_arguments["<driver>"],
         global_arguments["<host_prefix>"],
         services)
-
-    print(results)
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ usage:
 options:
     -h --help   Show this screen
     --version   Show version
+    nodes       Comma-separated list of nodes
 """.format(
         command = os.path.basename(sys.argv[0]))
 
@@ -26,10 +27,8 @@ def execute_on_nodes(
         command,
         arguments):
 
-    results = docker_base.swarm.execute_on_nodes(driver, host_prefix,
+    docker_base.swarm.execute_on_nodes(driver, host_prefix,
         nodes, command, arguments)
-
-    print(results)
 
 
 if __name__ == "__main__":
