@@ -20,7 +20,9 @@ Commands:
     create      Create new Swarm and start it
     status      Print information about a Swarm that has been started
     start       Start Swarm nodes that have been stopped
-    stop        Stop Swarm nodes that have been started
+    stop        Stop Swarm nodes that have been started, leave Swarm
+    pause       Pause running Swarm nodes
+    resume      Resume paused Swarm nodes
     add         Add new Swarm nodes
     remove      Remove Swarm nodes that are running or have been stopped
     network     Manage Swarm networks
@@ -140,6 +142,58 @@ def stop_nodes(
     arguments = docopt.docopt(stop_nodes_doc_string, argv=command_arguments)
     nodes = arguments["<nodes>"]
     results = docker_base.swarm.stop_nodes(
+        global_arguments["<driver>"],
+        global_arguments["<host_prefix>"],
+        nodes)
+
+
+pause_nodes_doc_string = """\
+Pause one or more Docker Swarm nodes
+
+usage:
+    pause [<nodes>...]
+    pause (-h | --help)
+
+options:
+    -h --help       Show this screen
+    <nodes>...      Names of nodes to pause
+
+If no nodes are passed, the whole Swarm is paused
+"""
+
+
+def pause_nodes(
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(pause_nodes_doc_string, argv=command_arguments)
+    nodes = arguments["<nodes>"]
+    results = docker_base.swarm.pause_nodes(
+        global_arguments["<driver>"],
+        global_arguments["<host_prefix>"],
+        nodes)
+
+
+resume_nodes_doc_string = """\
+Resume one or more paused Docker Swarm nodes
+
+usage:
+    resume [<nodes>...]
+    resume (-h | --help)
+
+options:
+    -h --help       Show this screen
+    <nodes>...      Names of nodes to resume
+
+If no nodes are passed, the whole Swarm is resumed
+"""
+
+
+def resume_nodes(
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(resume_nodes_doc_string, argv=command_arguments)
+    nodes = arguments["<nodes>"]
+    results = docker_base.swarm.resume_nodes(
         global_arguments["<driver>"],
         global_arguments["<host_prefix>"],
         nodes)
@@ -306,6 +360,8 @@ if __name__ == "__main__":
         "start": start_nodes,
         "status": status_of_swarm,
         "stop": stop_nodes,
+        "pause": pause_nodes,
+        "resume": resume_nodes,
         "add": add_nodes,
         "remove": remove_nodes,
         "network": manage_network,

@@ -31,6 +31,24 @@ def stop_nodes(
         nodes=nodes)
 
 
+def pause_nodes(
+        driver,
+        host_prefix,
+        nodes):
+    return execute(fabfile.pause_nodes,
+        driver=driver, host_prefix=host_prefix,
+        nodes=nodes)
+
+
+def resume_nodes(
+        driver,
+        host_prefix,
+        nodes):
+    return execute(fabfile.resume_nodes,
+        driver=driver, host_prefix=host_prefix,
+        nodes=nodes)
+
+
 def remove_nodes(
         driver,
         host_prefix,
@@ -107,7 +125,7 @@ def status_of_services(
 def remove_services(
         driver,
         host_prefix,
-        names):
+        services):
     return execute(fabfile.remove_services,
         driver=driver, host_prefix=host_prefix,
-        names=names)
+        services=services)

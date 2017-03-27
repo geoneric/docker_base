@@ -29,19 +29,25 @@ command.
 remove_service_doc_string = """\
 Remove one or more created Docker services
 
-usage: {command} remove <name>...
+usage:
+    remove <services>...
+    remove (-h | --help)
 
 options:
     -h --help       Show this screen
-""".format(
-        command = os.path.basename(sys.argv[0]))
+    <services>...   Names of services to remove
+"""
 
 
 def remove_services(
-        argv):
-    arguments = docopt.docopt(remove_service_doc_string, argv=argv)
-    names = arguments["<name>"]
-    results = docker_base.swarm.remove_services(names)
+        command_arguments,
+        global_arguments):
+    arguments = docopt.docopt(remove_service_doc_string, argv=command_arguments)
+    services = arguments["<services>"]
+    results = docker_base.swarm.remove_services(
+        global_arguments["<driver>"],
+        global_arguments["<host_prefix>"],
+        services)
 
 
 status_doc_string = """\

@@ -494,6 +494,13 @@ class Swarm(object):
                 "Node {} must be stopped first...".format(node))
 
 
+    def assert_node_is_paused(self,
+            node):
+        if not node in self.swarm_hostnames(state="Saved"):
+            raise RuntimeError(
+                "Node {} must be paused first...".format(node))
+
+
     def node_is_down(self,
             node):
         """
@@ -601,6 +608,15 @@ class Swarm(object):
             sys.stdout.write("--- {} ---\n{}\n\n".format(service_name, result))
 
 
+    def remove_services(self,
+            service_names):
+        self.assert_swarm_is_running()
+
+        for service_name in service_names:
+            command = "sudo docker service rm {}".format(service_name)
+            self.run_on_manager(command, capture=False)
+
+
     def stop(self,
             nodes):
 
@@ -645,6 +661,40 @@ class Swarm(object):
             self.assert_node_is_down(node)
             self.local("docker-machine start {}".format(node), capture=False)
             self.join_swarm(node)
+
+
+    def pause(self,
+            nodes):
+
+        self.assert_swarm_exists()
+
+        if not nodes:
+            nodes = self.swarm_hostnames(state="Running")
+        else:
+            nodes = [self.host_basename(node) for node in nodes]
+
+        for node in nodes:
+            self.assert_node_is_ready(node)
+
+            assert self.driver == "virtualbox", self.driver
+            command = "VBoxManage controlvm {} savestate".format(node)
+
+            self.local(command, capture=False)
+
+
+    def resume(self,
+            nodes):
+
+        self.assert_swarm_exists()
+
+        if not nodes:
+            nodes = self.swarm_hostnames(state="Saved")
+        else:
+            nodes = [self.host_basename(node) for node in nodes]
+
+        for node in nodes:
+            self.assert_node_is_paused(node)
+            self.local("docker-machine start {}".format(node), capture=False)
 
 
     def remove(self,
@@ -792,6 +842,43 @@ def start_nodes(
     swarm.start(nodes)
 
 
+def pause_nodes(
+        driver,
+        host_prefix,
+        nodes):
+    """
+    Pause zero or more Swarm nodes
+
+    Each node passed in is paused. In case no nodes are passed in,
+    all running nodes are paused. The node is paused in such a way that
+    it can be resumed again.
+
+    This function fails
+    - if no Swarm exists
+    - if one of the nodes passed is not a started node in the Swarm
+    """
+    swarm = Swarm(driver, host_prefix)
+    swarm.pause(nodes)
+
+
+def resume_nodes(
+        driver,
+        host_prefix,
+        nodes):
+    """
+    Resume zero or more paused Swarm nodes
+
+    Each node passed in is resumed. In case no nodes are passed in,
+    all running nodes are resumed.
+
+    This function fails
+    - if no Swarm exists
+    - if one of the nodes passed is not a paused node in the Swarm
+    """
+    swarm = Swarm(driver, host_prefix)
+    swarm.resume(nodes)
+
+
 def add_manager_nodes(
         driver,
         host_prefix,
@@ -847,11 +934,10 @@ def status_of_services(
     swarm.status_of_services(services)
 
 
-# def remove(
-#         names):
-# 
-#     fabfile.assert_swarm_is_running()
-# 
-#     for name in names:
-#         command = "docker service rm {}".format(name)
-#         fabfile.run_on_manager(command)
+def remove_services(
+        driver,
+        host_prefix,
+        services):
+
+    swarm = Swarm(driver, host_prefix)
+    swarm.remove_services(services)
