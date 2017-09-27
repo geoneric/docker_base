@@ -222,7 +222,9 @@ class Swarm(object):
         options = [
             "--driver {}".format(self.driver),
             "--swarm",
-            "--swarm-image \"swarm:1.2.6\"",
+            "--swarm-image \"swarm:1.2.8\"",
+            "--engine-storage-driver overlay2",
+            # "--engine-install-url=https://releases.rancher.com/install-docker/17.05.sh",
         ]
 
         if self.driver != "virtualbox":
